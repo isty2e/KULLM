@@ -1,0 +1,17 @@
+name: koalpaca
+channels:
+  - nvidia
+  - pytorch
+  - conda-forge
+dependencies:
+  - python=3.10
+  - pip
+  - pytorch-cuda
+  - black
+  - isort
+  - jupyter
+  - pytorch
+  - pyarrow
+  - polars
+  - gradio
+  - scipy

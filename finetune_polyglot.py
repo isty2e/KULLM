@@ -27,16 +27,16 @@ from utils.prompter import Prompter
 
 def train(
     # model/data params
-    base_model: str = "EleutherAI/polyglot-ko-12.8b",  # the only required argument
+    base_model: str = "beomi/KoAlpaca-Polyglot-12.8B",  # the only required argument
     data_path: str = "/data/kullm-v2",
     output_dir: str = "./lora-alpaca",
     # training hyperparams
     batch_size: int = 128,
     micro_batch_size: int = 8,
-    num_epochs: int = 3,
-    learning_rate: float = 3e-4,
+    num_epochs: int = 4,
+    learning_rate: float = 2e-5,
     cutoff_len: int = 2048,
-    val_set_size: int = 2000,
+    val_set_size: int = 3000,
     # lora hyperparams
     lora_r: int = 32,
     lora_alpha: int = 64,
@@ -52,7 +52,7 @@ def train(
     wandb_watch: str = "",  # options: false | gradients | all
     wandb_log_model: str = "",  # options: false | true
     resume_from_checkpoint: str = None,  # either training checkpoint or final adapter
-    prompt_template_name: str = "kullm-v2",  # The prompt template to use, will default to alpaca.
+    prompt_template_name: str = "kullm",  # The prompt template to use, will default to alpaca.
 ):
     if int(os.environ.get("LOCAL_RANK", 0)) == 0:
         print(
