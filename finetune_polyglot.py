@@ -31,12 +31,12 @@ def train(
     data_path: str = "/data/kullm-v2",
     output_dir: str = "./lora-alpaca",
     # training hyperparams
-    batch_size: int = 128,
+    batch_size: int = 32,
     micro_batch_size: int = 8,
     num_epochs: int = 4,
-    learning_rate: float = 2e-5,
+    learning_rate: float = 3e-4,
     cutoff_len: int = 2048,
-    val_set_size: int = 3000,
+    val_set_size: int = 2000,
     # lora hyperparams
     lora_r: int = 32,
     lora_alpha: int = 64,
