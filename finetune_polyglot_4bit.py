@@ -113,13 +113,15 @@ def train(
         gradient_accumulation_steps = gradient_accumulation_steps // world_size
 
     # Check if parameter passed or if set within environ
-    use_wandb = len(wandb_project) > 0 or ("WANDB_PROJECT" in os.environ and len(os.environ["WANDB_PROJECT"]) > 0)
+    use_wandb = wandb_project != "" or (
+        "WANDB_PROJECT" in os.environ and len(os.environ["WANDB_PROJECT"]) > 0
+    )
     # Only overwrite environ if wandb param passed
-    if len(wandb_project) > 0:
+    if wandb_project != "":
         os.environ["WANDB_PROJECT"] = wandb_project
-    if len(wandb_watch) > 0:
+    if wandb_watch != "":
         os.environ["WANDB_WATCH"] = wandb_watch
-    if len(wandb_log_model) > 0:
+    if wandb_log_model != "":
         os.environ["WANDB_LOG_MODEL"] = wandb_log_model
 
     bnb_config = BitsAndBytesConfig(
@@ -132,8 +134,6 @@ def train(
     model = GPTNeoXForCausalLM.from_pretrained(
         base_model,
         quantization_config=bnb_config,
-        #load_in_8bit=True,
-        #torch_dtype=torch.float16,
         device_map=device_map,
     )
 
