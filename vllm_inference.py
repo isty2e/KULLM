@@ -34,10 +34,13 @@ def main(args):
 
     llm = LLM(model=str(args.model), tensor_parallel_size=args.num_gpus)
     sampling_params = SamplingParams(
-        best_of=3,
+        best_of=5,
         frequency_penalty=0.05,
         temperature=0.2,
-        max_new_tokens=512,
+        max_new_tokens=1024,
+        top_k=50,
+        top_p=0.95,
+        use_beam_search=True,
         stop=["</끝>", "<|endoftext|>"],
     )
 

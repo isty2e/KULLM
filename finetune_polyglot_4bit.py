@@ -6,21 +6,21 @@ import fire
 import torch
 import transformers
 from datasets import load_dataset
-
-"""
-Unused imports:
-import torch.nn as nn
-import bitsandbytes as bnb
-"""
-
 from peft import (
     LoraConfig,
     get_peft_model,
-    get_peft_model_state_dict,
-    prepare_model_for_int8_training,
+    prepare_model_for_kbit_training,
     set_peft_model_state_dict,
 )
-from transformers import GPTNeoXForCausalLM, GPTNeoXTokenizerFast, BitsAndBytesConfig, TrainerCallback, TrainingArguments, TrainerState, TrainerControl
+from transformers import (
+    BitsAndBytesConfig,
+    GPTNeoXForCausalLM,
+    GPTNeoXTokenizerFast,
+    TrainerCallback,
+    TrainerControl,
+    TrainerState,
+    TrainingArguments,
+)
 from transformers.trainer_utils import PREFIX_CHECKPOINT_DIR
 
 from utils.prompter import Prompter
@@ -34,12 +34,16 @@ class SavePeftModelCallback(TrainerCallback):
         control: TrainerControl,
         **kwargs,
     ):
-        checkpoint_folder = os.path.join(args.output_dir, f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}")
+        checkpoint_folder = os.path.join(
+            args.output_dir, f"{PREFIX_CHECKPOINT_DIR}-{state.global_step}"
+        )
 
         peft_model_path = os.path.join(checkpoint_folder, "adapter_model")
         kwargs["model"].save_pretrained(peft_model_path)
 
-        pytorch_model_path = os.path.join(checkpoint_folder, "pytorch_model.bin")
+        pytorch_model_path = os.path.join(
+            checkpoint_folder, "pytorch_model.bin"
+        )
         if os.path.exists(pytorch_model_path):
             os.remove(pytorch_model_path)
         return control
@@ -54,7 +58,7 @@ def train(
     batch_size: int = 32,
     micro_batch_size: int = 8,
     num_epochs: int = 4,
-    learning_rate: float = 3e-4,
+    learning_rate: float = 1e-4,
     cutoff_len: int = 2048,
     val_set_size: int = 2000,
     # lora hyperparams
@@ -76,7 +80,7 @@ def train(
 ):
     if int(os.environ.get("LOCAL_RANK", 0)) == 0:
         print(
-            f"Training Alpaca-LoRA model with params:\n"
+            "Training Alpaca-LoRA model with params:\n"
             f"base_model: {base_model}\n"
             f"data_path: {data_path}\n"
             f"output_dir: {output_dir}\n"
@@ -100,7 +104,9 @@ def train(
             f"resume_from_checkpoint: {resume_from_checkpoint or False}\n"
             f"prompt template: {prompt_template_name}\n"
         )
-    assert base_model, "Please specify a --base_model, e.g. --base_model='huggyllama/llama-7b'"
+    assert (
+        base_model
+    ), "Please specify a --base_model, e.g. --base_model='huggyllama/llama-7b'"
     gradient_accumulation_steps = batch_size // micro_batch_size
 
     prompter = Prompter(prompt_template_name)
@@ -172,19 +178,25 @@ def train(
         )
         tokenized_full_prompt = tokenize(full_prompt)
         if not train_on_inputs:
-            user_prompt = prompter.generate_prompt(data_point["instruction"], data_point["input"])
-            tokenized_user_prompt = tokenize(user_prompt, add_eos_token=add_eos_token)
+            user_prompt = prompter.generate_prompt(
+                data_point["instruction"], data_point["input"]
+            )
+            tokenized_user_prompt = tokenize(
+                user_prompt, add_eos_token=add_eos_token
+            )
             user_prompt_len = len(tokenized_user_prompt["input_ids"])
 
             if add_eos_token:
                 user_prompt_len -= 1
 
-            tokenized_full_prompt["labels"] = [-100] * user_prompt_len + tokenized_full_prompt["labels"][
+            tokenized_full_prompt["labels"] = [
+                -100
+            ] * user_prompt_len + tokenized_full_prompt["labels"][
                 user_prompt_len:
             ]  # could be sped up, probably
         return tokenized_full_prompt
 
-    model = prepare_model_for_int8_training(model)
+    model = prepare_model_for_kbit_training(model)
 
     config = LoraConfig(
         r=lora_r,
@@ -203,12 +215,16 @@ def train(
 
     if resume_from_checkpoint:
         # Check the available weights and load them
-        checkpoint_name = os.path.join(resume_from_checkpoint, "pytorch_model.bin")  # Full checkpoint
+        checkpoint_name = os.path.join(
+            resume_from_checkpoint, "pytorch_model.bin"
+        )  # Full checkpoint
         if not os.path.exists(checkpoint_name):
             checkpoint_name = os.path.join(
                 resume_from_checkpoint, "adapter_model.bin"
             )  # only LoRA model - LoRA config above has to fit
-            resume_from_checkpoint = False  # So the trainer won't try loading its state
+            resume_from_checkpoint = (
+                False  # So the trainer won't try loading its state
+            )
         # The two files above have a different name depending on how they were saved, but are actually the same.
         if os.path.exists(checkpoint_name):
             print(f"Restarting from {checkpoint_name}")
@@ -220,9 +236,15 @@ def train(
     model.print_trainable_parameters()  # Be more transparent about the % of trainable params.
 
     if val_set_size > 0:
-        train_val = data["train"].train_test_split(test_size=val_set_size, shuffle=True, seed=42)
-        train_data = train_val["train"].shuffle().map(generate_and_tokenize_prompt)
-        val_data = train_val["test"].shuffle().map(generate_and_tokenize_prompt)
+        train_val = data["train"].train_test_split(
+            test_size=val_set_size, shuffle=True, seed=42
+        )
+        train_data = (
+            train_val["train"].shuffle().map(generate_and_tokenize_prompt)
+        )
+        val_data = (
+            train_val["test"].shuffle().map(generate_and_tokenize_prompt)
+        )
     else:
         train_data = data["train"].shuffle().map(generate_and_tokenize_prompt)
         val_data = None
@@ -264,11 +286,6 @@ def train(
     )
     model.config.use_cache = False
 
-    # old_state_dict = model.state_dict
-    # model.state_dict = (lambda self, *_, **__: get_peft_model_state_dict(self, old_state_dict())).__get__(
-    #     model, type(model)
-    # )
-
     if torch.__version__ >= "2" and sys.platform != "win32":
         model = torch.compile(model)
 
@@ -276,7 +293,9 @@ def train(
 
     model.save_pretrained(output_dir)
 
-    print("\n If there's a warning about missing keys above, please disregard :)")
+    print(
+        "\n If there's a warning about missing keys above, please disregard :)"
+    )
 
 
 if __name__ == "__main__":
