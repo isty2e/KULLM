@@ -12,9 +12,11 @@ prompter = Prompter("kullm")
 
 
 def get_ids_and_prompts(
-    data_path: Path, max_samples: Optional[int] = None
+    data_path: Path, max_samples: Optional[int] = None, shuffle: bool = False
 ) -> tuple[list[str], list[str]]:
     dataset = load_dataset("json", data_files=str(data_path))
+    if shuffle:
+        dataset = dataset.shuffle()
     data_ids, prompts = [], []
 
     for i, data in enumerate(dataset["train"]):
@@ -37,7 +39,7 @@ def get_ids_and_prompts(
 
 def main(args):
     print("Loading data")
-    data_ids, prompts = get_ids_and_prompts(args.data, args.max_samples)
+    data_ids, prompts = get_ids_and_prompts(args.data, args.max_samples, args.shuffle)
 
     print("Loading model")
     # Tensor parallelism won't work because of divisibility
@@ -82,6 +84,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_samples", type=int)
     parser.add_argument("--max_tokens", type=int, default=512)
     parser.add_argument("--use_beam_search", action="store_true")
+    parser.add_argument("--shuffle", action="store_true")
 
     args = parser.parse_args()
 
