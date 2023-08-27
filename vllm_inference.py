@@ -1,5 +1,6 @@
 import argparse
 from pathlib import Path
+from typing import Optional
 
 import polars as pl
 from datasets import load_dataset
@@ -10,11 +11,16 @@ from utils.prompter import Prompter
 prompter = Prompter("kullm")
 
 
-def get_ids_and_prompts(data_path: Path) -> tuple[list[str], list[str]]:
+def get_ids_and_prompts(
+    data_path: Path, max_samples: Optional[int] = None
+) -> tuple[list[str], list[str]]:
     dataset = load_dataset("json", data_files=str(data_path))
     data_ids, prompts = [], []
 
-    for data in dataset["train"]:
+    for i, data in enumerate(dataset["train"]):
+        if max_samples is not None and i >= max_samples:
+            break
+
         data_id = data["id"]
         instruction = data["instruction"]
         input_text = data["input"]
@@ -32,21 +38,44 @@ def get_ids_and_prompts(data_path: Path) -> tuple[list[str], list[str]]:
 def main(args):
     data_ids, prompts = get_ids_and_prompts(args.data)
 
-    llm = LLM(model=str(args.model), tensor_parallel_size=args.num_gpus)
-    sampling_params = SamplingParams(
-        best_of=5,
-        frequency_penalty=0.05,
-        temperature=0.2,
-        max_new_tokens=1024,
-        top_k=50,
-        top_p=0.95,
-        use_beam_search=True,
-        stop=["</끝>", "<|endoftext|>"],
-    )
+    try:
+        llm = LLM(
+            model=str(args.model),
+            tokenizer="beomi/KoAlpaca-Polyglot-12.8B",
+            tensor_parallel_size=args.num_gpus,
+        )
+    except Exception:
+        print("Cannot use tensor parallelism")
+        llm = LLM(
+            model=str(args.model), tokenizer="beomi/KoAlpaca-Polyglot-12.8B"
+        )
+
+    sampling_kwargs = {
+        "best_of": 5,
+        "frequency_penalty": 0.05,
+        "max_new_tokens": 2048,
+        "stop": ["</끝>", "<|endoftext|>"],
+    }
+
+    if args.use_beam_search:
+        sampling_kwargs |= {
+            "temperature": 0.0,
+            "use_beam_search": True,
+        }
+    else:
+        sampling_kwargs |= {
+            "temperature": 0.2,
+            "top_k": 50,
+            "top_p": 0.95,
+        }
+    sampling_params = SamplingParams(**sampling_kwargs)
 
     outputs = llm.generate(prompts, sampling_params)
+    generated_texts = [output.outputs[0].text for output in outputs]
 
-    df = pl.DataFrame({"TextHandle": data_ids, "Korean (Model)": outputs})
+    df = pl.DataFrame(
+        {"TextHandle": data_ids, "Korean (Model)": generated_texts}
+    )
     df.write_parquet(args.output_df)
 
 
@@ -57,6 +86,8 @@ if __name__ == "__main__":
     parser.add_argument("--model_str", default="Model")
     parser.add_argument("--num_gpus", type=int, default=4)
     parser.add_argument("--output_df", type=Path)
+    parser.add_argument("--max_samples", type=int)
+    parser.add_argument("--use_beam_search", action="store_true")
 
     args = parser.parse_args()
 
