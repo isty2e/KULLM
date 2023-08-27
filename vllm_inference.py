@@ -36,8 +36,10 @@ def get_ids_and_prompts(
 
 
 def main(args):
+    print("Loading data")
     data_ids, prompts = get_ids_and_prompts(args.data)
 
+    print("Loading model")
     # Tensor parallelism won't work because of divisibility
     llm = LLM(model=str(args.model), tokenizer="beomi/KoAlpaca-Polyglot-12.8B")
 
@@ -61,6 +63,7 @@ def main(args):
         }
     sampling_params = SamplingParams(**sampling_kwargs)
 
+    print("Generation texts")
     outputs = llm.generate(prompts, sampling_params)
     generated_texts = [output.outputs[0].text for output in outputs]
 
