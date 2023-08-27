@@ -46,8 +46,9 @@ def main(args):
     llm = LLM(model=str(args.model), tokenizer="nlpai-lab/kullm-polyglot-12.8b-v2")
 
     sampling_kwargs = {
-        "best_of": 5,
-        "frequency_penalty": 0.05,
+        "best_of": 1,
+        "presence_penalty": 0.02,
+        "frequency_penalty": 0.2,
         "max_tokens": args.max_tokens,
         "stop": ["</끝>", "<|endoftext|>"],
     }
@@ -59,9 +60,9 @@ def main(args):
         }
     else:
         sampling_kwargs |= {
-            "temperature": 0.2,
+            "temperature": 0.05,
             "top_k": 50,
-            "top_p": 0.95,
+            "top_p": 0.15,
         }
     sampling_params = SamplingParams(**sampling_kwargs)
 
