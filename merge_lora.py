@@ -31,12 +31,12 @@ def main(args):
     lora_model = lora_model.merge_and_unload()
 
     print("Saving the merged model")
-    lora_model.save_pretrained(args.output_dir, safe_serialization=True)
+    lora_model.save_pretrained(args.output_dir)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--base_model", default="beomi/KoAlpaca-Polyglot-12.8B")
+    parser.add_argument("--base_model", default="nlpai-lab/kullm-polyglot-12.8b-v2")
     parser.add_argument("--lora_path", type=Path, required=True)
     parser.add_argument(
         "--output_dir", type=Path, default="ckpt/polyglot-13b-kullm_v3-3e-5"

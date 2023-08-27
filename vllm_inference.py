@@ -41,7 +41,7 @@ def main(args):
 
     print("Loading model")
     # Tensor parallelism won't work because of divisibility
-    llm = LLM(model=str(args.model), tokenizer="beomi/KoAlpaca-Polyglot-12.8B")
+    llm = LLM(model=str(args.model), tokenizer="nlpai-lab/kullm-polyglot-12.8b-v2")
 
     sampling_kwargs = {
         "best_of": 5,

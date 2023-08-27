@@ -51,7 +51,7 @@ class SavePeftModelCallback(TrainerCallback):
 
 def train(
     # model/data params
-    base_model: str = "beomi/KoAlpaca-Polyglot-12.8B",  # the only required argument
+    base_model: str = "nlpai-lab/kullm-polyglot-12.8b-v2",  # the only required argument
     data_path: str = "/data/kullm-v2",
     output_dir: str = "./lora-alpaca",
     # training hyperparams
