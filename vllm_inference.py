@@ -43,7 +43,7 @@ def main(args):
 
     print("Loading model")
     # Tensor parallelism won't work because of divisibility
-    llm = LLM(model=str(args.model), tokenizer="nlpai-lab/kullm-polyglot-12.8b-v2")
+    llm = LLM(model=str(args.model), tokenizer=args.base_model)
 
     sampling_kwargs = {
         "best_of": 1,
@@ -79,6 +79,7 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=Path, required=True)
+    parser.add_argument("--base_model", default="nlpai-lab/kullm-polyglot-12.8b-v2")
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--model_str", default="Model")
     parser.add_argument("--output_df", type=Path)
