@@ -53,7 +53,7 @@ def main(args):
     sampling_kwargs = {
         "best_of": 5,
         "frequency_penalty": 0.05,
-        "max_new_tokens": 2048,
+        "max_tokens": 4096,
         "stop": ["</끝>", "<|endoftext|>"],
     }
 
