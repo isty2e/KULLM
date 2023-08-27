@@ -37,7 +37,7 @@ def get_ids_and_prompts(
 
 def main(args):
     print("Loading data")
-    data_ids, prompts = get_ids_and_prompts(args.data)
+    data_ids, prompts = get_ids_and_prompts(args.data, args.max_samples)
 
     print("Loading model")
     # Tensor parallelism won't work because of divisibility
