@@ -38,13 +38,8 @@ def get_ids_and_prompts(
 def main(args):
     data_ids, prompts = get_ids_and_prompts(args.data)
 
-    num_gpus = 3 if args.num_gpus >= 3 else 1
-    llm = LLM(
-        model=str(args.model),
-        tokenizer="beomi/KoAlpaca-Polyglot-12.8B",
-        tensor_parallel_size=num_gpus,
-    )
-    # llm = LLM(model=str(args.model), tokenizer="beomi/KoAlpaca-Polyglot-12.8B")
+    # Tensor parallelism won't work because of divisibility
+    llm = LLM(model=str(args.model), tokenizer="beomi/KoAlpaca-Polyglot-12.8B")
 
     sampling_kwargs = {
         "best_of": 5,
@@ -80,7 +75,6 @@ if __name__ == "__main__":
     parser.add_argument("--data", type=Path, required=True)
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--model_str", default="Model")
-    parser.add_argument("--num_gpus", type=int, default=4)
     parser.add_argument("--output_df", type=Path)
     parser.add_argument("--max_samples", type=int)
     parser.add_argument("--use_beam_search", action="store_true")
