@@ -29,6 +29,7 @@ def main(args):
 
     print("Merging LoRA weights")
     lora_model = lora_model.merge_and_unload()
+    lora_model.train(False)
 
     print("Saving the merged model")
     lora_model.save_pretrained(args.output_dir)
