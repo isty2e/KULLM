@@ -38,22 +38,18 @@ def get_ids_and_prompts(
 def main(args):
     data_ids, prompts = get_ids_and_prompts(args.data)
 
-    try:
-        llm = LLM(
-            model=str(args.model),
-            tokenizer="beomi/KoAlpaca-Polyglot-12.8B",
-            tensor_parallel_size=args.num_gpus,
-        )
-    except Exception:
-        print("Cannot use tensor parallelism")
-        llm = LLM(
-            model=str(args.model), tokenizer="beomi/KoAlpaca-Polyglot-12.8B"
-        )
+    num_gpus = 3 if args.num_gpus >= 3 else 1
+    llm = LLM(
+        model=str(args.model),
+        tokenizer="beomi/KoAlpaca-Polyglot-12.8B",
+        tensor_parallel_size=num_gpus,
+    )
+    # llm = LLM(model=str(args.model), tokenizer="beomi/KoAlpaca-Polyglot-12.8B")
 
     sampling_kwargs = {
         "best_of": 5,
         "frequency_penalty": 0.05,
-        "max_tokens": 4096,
+        "max_tokens": 2048,
         "stop": ["</끝>", "<|endoftext|>"],
     }
 
