@@ -46,7 +46,7 @@ def main(args):
     sampling_kwargs = {
         "best_of": 5,
         "frequency_penalty": 0.05,
-        "max_tokens": 2048,
+        "max_tokens": args.max_tokens,
         "stop": ["</끝>", "<|endoftext|>"],
     }
 
@@ -80,6 +80,7 @@ if __name__ == "__main__":
     parser.add_argument("--model_str", default="Model")
     parser.add_argument("--output_df", type=Path)
     parser.add_argument("--max_samples", type=int)
+    parser.add_argument("--max_tokens", type=int, default=2048)
     parser.add_argument("--use_beam_search", action="store_true")
 
     args = parser.parse_args()
