@@ -85,6 +85,7 @@ def train(
     resume_from_checkpoint: str = None,
     # The prompt template to use, will default to alpaca.
     prompt_template_name: str = "conditional_translation",
+    use_prompter: bool = True,
 ):
     if int(os.environ.get("LOCAL_RANK", 0)) == 0:
         print(
@@ -188,25 +189,48 @@ def train(
             data_point["output"],
         )
         tokenized_full_prompt = tokenize(full_prompt)
-        if not train_on_inputs:
-            user_prompt = prompter.generate_prompt(
-                data_point["instruction"], data_point["input"]
-            )
-            tokenized_user_prompt = tokenize(
-                user_prompt, add_eos_token=add_eos_token
-            )
-            user_prompt_len = len(tokenized_user_prompt["input_ids"])
 
-            if add_eos_token:
-                user_prompt_len -= 1
+        if train_on_inputs:
+            return tokenized_full_prompt
 
-            # could be sped up, probably
-            tokenized_full_prompt["labels"] = [
-                -100
-            ] * user_prompt_len + tokenized_full_prompt["labels"][
-                user_prompt_len:
-            ]
+        user_prompt = prompter.generate_prompt(
+            data_point["instruction"], data_point["input"]
+        )
+        tokenized_user_prompt = tokenize(
+            user_prompt, add_eos_token=add_eos_token
+        )
+        user_prompt_len = len(tokenized_user_prompt["input_ids"])
+
+        if add_eos_token:
+            user_prompt_len -= 1
+
+        # could be sped up, probably
+        tokenized_full_prompt["labels"] = [
+            -100
+        ] * user_prompt_len + tokenized_full_prompt["labels"][user_prompt_len:]
+
         return tokenized_full_prompt
+
+    def tokenize_prompt(data_point):
+        prompt = data_point["prompt"]
+        output = data_point["output"]
+
+        if train_on_inputs:
+            if output:
+                prompt = f"{prompt}{output}"
+            return tokenize(prompt)
+
+        tokenized_prompt = tokenize(prompt, add_eos_token=add_eos_token)
+        prompt_len = len(tokenized_prompt["input_ids"])
+
+        if add_eos_token:
+            prompt_len -= 1
+
+        tokenized_prompt["labels"] = [-100] * prompt_len + tokenized_prompt[
+            "labels"
+        ][prompt_len:]
+
+        return tokenized_prompt
 
     model = prepare_model_for_kbit_training(model)
 
@@ -249,18 +273,19 @@ def train(
     # Be more transparent about the % of trainable params.
     model.print_trainable_parameters()
 
+    if use_prompter:
+        input_to_tokens = generate_and_tokenize_prompt
+    else:
+        input_to_tokens = tokenize_prompt
+
     if val_set_size > 0:
         train_val = data["train"].train_test_split(
             test_size=val_set_size, shuffle=True, seed=42
         )
-        train_data = (
-            train_val["train"].shuffle().map(generate_and_tokenize_prompt)
-        )
-        val_data = (
-            train_val["test"].shuffle().map(generate_and_tokenize_prompt)
-        )
+        train_data = train_val["train"].shuffle().map(input_to_tokens)
+        val_data = train_val["test"].shuffle().map(input_to_tokens)
     else:
-        train_data = data["train"].shuffle().map(generate_and_tokenize_prompt)
+        train_data = data["train"].shuffle().map(input_to_tokens)
         val_data = None
 
     if not ddp and torch.cuda.device_count() > 1:

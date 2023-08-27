@@ -12,7 +12,10 @@ prompter = Prompter("conditional_translation")
 
 
 def get_ids_and_prompts(
-    data_path: Path, max_samples: Optional[int] = None, shuffle: bool = False
+    data_path: Path,
+    max_samples: Optional[int] = None,
+    shuffle: bool = False,
+    use_prompter: bool = False,
 ) -> tuple[list[str], list[str]]:
     dataset = load_dataset("json", data_files=str(data_path))
     if shuffle:
@@ -24,10 +27,13 @@ def get_ids_and_prompts(
             break
 
         data_id = data["id"]
-        instruction = data["instruction"]
-        input_text = data["input"]
 
-        prompt = prompter.generate_prompt(instruction, input_text)
+        if use_prompter:
+            instruction = data["instruction"]
+            input_text = data["input"]
+            prompt = prompter.generate_prompt(instruction, input_text)
+        else:
+            prompt = data["prompt"]
 
         data_ids.append(data_id)
         prompts.append(prompt)
@@ -39,7 +45,9 @@ def get_ids_and_prompts(
 
 def main(args):
     print("Loading data")
-    data_ids, prompts = get_ids_and_prompts(args.data, args.max_samples, args.shuffle)
+    data_ids, prompts = get_ids_and_prompts(
+        args.data, args.max_samples, args.shuffle, args.use_prompter
+    )
 
     print("Loading model")
     # Tensor parallelism won't work because of divisibility
@@ -79,7 +87,9 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=Path, required=True)
-    parser.add_argument("--base_model", default="nlpai-lab/kullm-polyglot-12.8b-v2")
+    parser.add_argument(
+        "--base_model", default="nlpai-lab/kullm-polyglot-12.8b-v2"
+    )
     parser.add_argument("--model", type=Path, required=True)
     parser.add_argument("--model_str", default="Model")
     parser.add_argument("--output_df", type=Path)
@@ -87,6 +97,7 @@ if __name__ == "__main__":
     parser.add_argument("--max_tokens", type=int, default=512)
     parser.add_argument("--use_beam_search", action="store_true")
     parser.add_argument("--shuffle", action="store_true")
+    parser.add_argument("--use_prompter", action="store_true")
 
     args = parser.parse_args()
 
