@@ -8,7 +8,7 @@ from vllm import LLM, SamplingParams
 
 from utils.prompter import Prompter
 
-prompter = Prompter("kullm")
+prompter = Prompter("conditional_translation")
 
 
 def get_ids_and_prompts(
