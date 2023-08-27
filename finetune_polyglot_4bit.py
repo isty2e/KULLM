@@ -16,6 +16,7 @@ from transformers import (
     BitsAndBytesConfig,
     GPTNeoXForCausalLM,
     GPTNeoXTokenizerFast,
+    PreTrainedTokenizerFast,
     TrainerCallback,
     TrainerControl,
     TrainerState,
@@ -51,7 +52,8 @@ class SavePeftModelCallback(TrainerCallback):
 
 def train(
     # model/data params
-    base_model: str = "nlpai-lab/kullm-polyglot-12.8b-v2",  # the only required argument
+    # the only required argument
+    base_model: str = "nlpai-lab/kullm-polyglot-12.8b-v2",
     data_path: str = "/data/kullm-v2",
     output_dir: str = "./lora-alpaca",
     # training hyperparams
@@ -67,16 +69,22 @@ def train(
     lora_dropout: float = 0.05,
     lora_target_modules: List[str] = ["query_key_value", "xxx"],
     # llm hyperparams
-    train_on_inputs: bool = True,  # if False, masks out inputs in loss
+    # if False, masks out inputs in loss
+    train_on_inputs: bool = True,
     add_eos_token: bool = False,
-    group_by_length: bool = False,  # faster, but produces an odd training loss curve
+    # faster, but produces an odd training loss curve
+    group_by_length: bool = False,
     # wandb params
     wandb_project: str = "",
     wandb_run_name: str = "",
-    wandb_watch: str = "",  # options: false | gradients | all
-    wandb_log_model: str = "",  # options: false | true
-    resume_from_checkpoint: str = None,  # either training checkpoint or final adapter
-    prompt_template_name: str = "conditional_translation",  # The prompt template to use, will default to alpaca.
+    # options: false | gradients | all
+    wandb_watch: str = "",
+    # options: false | true
+    wandb_log_model: str = "",
+    # either training checkpoint or final adapter
+    resume_from_checkpoint: str = None,
+    # The prompt template to use, will default to alpaca.
+    prompt_template_name: str = "conditional_translation",
 ):
     if int(os.environ.get("LOCAL_RANK", 0)) == 0:
         print(
@@ -143,10 +151,13 @@ def train(
         device_map=device_map,
     )
 
-    tokenizer = GPTNeoXTokenizerFast.from_pretrained(base_model)
+    # tokenizer = GPTNeoXTokenizerFast.from_pretrained(base_model)
+    tokenizer = PreTrainedTokenizerFast.from_pretrained(base_model)
 
-    # tokenizer.pad_token_id = 0  # unk. we want this to be different from the eos token
-    tokenizer.padding_side = "left"  # Allow batched inference
+    # unk. we want this to be different from the eos token
+    # tokenizer.pad_token_id = 0
+    # Allow batched inference
+    tokenizer.padding_side = "left"
 
     def tokenize(prompt, add_eos_token=True):
         # there's probably a way to do this with the tokenizer settings
@@ -189,11 +200,12 @@ def train(
             if add_eos_token:
                 user_prompt_len -= 1
 
+            # could be sped up, probably
             tokenized_full_prompt["labels"] = [
                 -100
             ] * user_prompt_len + tokenized_full_prompt["labels"][
                 user_prompt_len:
-            ]  # could be sped up, probably
+            ]
         return tokenized_full_prompt
 
     model = prepare_model_for_kbit_training(model)
@@ -215,16 +227,17 @@ def train(
 
     if resume_from_checkpoint:
         # Check the available weights and load them
+        # Full checkpoint
         checkpoint_name = os.path.join(
             resume_from_checkpoint, "pytorch_model.bin"
-        )  # Full checkpoint
+        )
         if not os.path.exists(checkpoint_name):
+            # only LoRA model - LoRA config above has to fit
             checkpoint_name = os.path.join(
                 resume_from_checkpoint, "adapter_model.bin"
-            )  # only LoRA model - LoRA config above has to fit
-            resume_from_checkpoint = (
-                False  # So the trainer won't try loading its state
             )
+            # So the trainer won't try loading its state
+            resume_from_checkpoint = False
         # The two files above have a different name depending on how they were saved, but are actually the same.
         if os.path.exists(checkpoint_name):
             print(f"Restarting from {checkpoint_name}")
@@ -233,7 +246,8 @@ def train(
         else:
             print(f"Checkpoint {checkpoint_name} not found")
 
-    model.print_trainable_parameters()  # Be more transparent about the % of trainable params.
+    # Be more transparent about the % of trainable params.
+    model.print_trainable_parameters()
 
     if val_set_size > 0:
         train_val = data["train"].train_test_split(
