@@ -63,6 +63,7 @@ def train(
     learning_rate: float = 1e-4,
     cutoff_len: int = 2048,
     val_set_size: int = 2000,
+    eval_interval: int = 200,
     # lora hyperparams
     lora_r: int = 32,
     lora_alpha: int = 64,
@@ -308,8 +309,8 @@ def train(
             optim="adamw_torch",
             evaluation_strategy="steps" if val_set_size > 0 else "no",
             save_strategy="steps",
-            eval_steps=200 if val_set_size > 0 else None,
-            save_steps=200,
+            eval_steps=eval_interval if val_set_size > 0 else None,
+            save_steps=eval_interval,
             output_dir=output_dir,
             save_total_limit=3,
             load_best_model_at_end=True if val_set_size > 0 else False,
