@@ -7,14 +7,13 @@ from transformers import GPTNeoXForCausalLM
 
 
 def main(args):
-    BASE_MODEL = args.base_model
-    assert BASE_MODEL, (
+    assert args.base_model, (
         "Please specify a value for BASE_MODEL environment variable, e.g."
         " `export BASE_MODEL=huggyllama/llama-7b`"
     )
 
     base_model = GPTNeoXForCausalLM.from_pretrained(
-        BASE_MODEL,
+        args.base_model,
         load_in_8bit=False,
         torch_dtype=torch.float16,
         device_map="auto",
@@ -32,6 +31,7 @@ def main(args):
     lora_model.train(False)
 
     print("Saving the merged model")
+    args.output_dir.mkdir(parents=True, exist_ok=True)
     lora_model.save_pretrained(args.output_dir)
 
 
