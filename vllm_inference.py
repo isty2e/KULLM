@@ -81,8 +81,8 @@ def main(args):
     else:
         sampling_kwargs |= {
             "temperature": 0.05,
-            "top_k": 50,
-            "top_p": 0.15,
+            "top_k": 40,
+            "top_p": 0.13,
         }
     sampling_params = SamplingParams(**sampling_kwargs)
 
