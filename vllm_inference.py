@@ -29,9 +29,11 @@ def get_ids_and_prompts(
     if end_idx is None:
         end_idx = len(dataset["train"])
 
-    for i, data in enumerate(dataset["train"][start_idx:end_idx]):
+    for i in range(end_idx - start_idx + 1):
         if max_samples is not None and i >= max_samples:
             break
+
+        data = dataset["train"][start_idx + i]
 
         data_id = data["id"]
 
