@@ -68,7 +68,7 @@ def main(args):
     llm = LLM(model=str(args.model), tokenizer=args.base_model)
 
     sampling_kwargs = {
-        "best_of": 1,
+        "best_of": args.best_of,
         "presence_penalty": 0.02,
         "frequency_penalty": 0.2,
         "max_tokens": args.max_tokens,
@@ -82,9 +82,9 @@ def main(args):
         }
     else:
         sampling_kwargs |= {
-            "temperature": 0.05,
-            "top_k": 40,
-            "top_p": 0.13,
+            "temperature": args.temperature,
+            "top_k": args.top_k,
+            "top_p": args.top_p,
         }
     sampling_params = SamplingParams(**sampling_kwargs)
 
@@ -114,6 +114,10 @@ if __name__ == "__main__":
     parser.add_argument("--start_idx", type=int)
     parser.add_argument("--end_idx", type=int)
     parser.add_argument("--use_prompter", action="store_true")
+    parser.add_argument("--best_of", type=int, default=1)
+    parser.add_argument("--temperature", type=float, default=0.05)
+    parser.add_argument("--top_k", type=int, default=20)
+    parser.add_argument("--top_p", type=float, default=0.1)
 
     args = parser.parse_args()
 
