@@ -3,7 +3,7 @@ from pathlib import Path
 
 import torch
 from peft import PeftModel
-from transformers import GPTNeoXForCausalLM
+from transformers import AutoModelForCausalLM
 
 
 def main(args):
@@ -12,7 +12,7 @@ def main(args):
         " `export BASE_MODEL=huggyllama/llama-7b`"
     )
 
-    base_model = GPTNeoXForCausalLM.from_pretrained(
+    base_model = AutoModelForCausalLM.from_pretrained(
         args.base_model,
         load_in_8bit=False,
         torch_dtype=torch.float16,
