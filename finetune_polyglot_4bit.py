@@ -17,6 +17,8 @@ from transformers import (
     GPTNeoXForCausalLM,
     GPTNeoXTokenizerFast,
     PreTrainedTokenizerFast,
+    AutoTokenizer,
+    AutoModelForCausalLM,
     TrainerCallback,
     TrainerControl,
     TrainerState,
@@ -147,14 +149,16 @@ def train(
         bnb_4bit_compute_dtype=torch.bfloat16,
     )
 
-    model = GPTNeoXForCausalLM.from_pretrained(
+    # model = GPTNeoXForCausalLM.from_pretrained(
+    model = AutoModelForCausalLM.from_pretrained(
         base_model,
         quantization_config=bnb_config,
         device_map=device_map,
     )
 
     # tokenizer = GPTNeoXTokenizerFast.from_pretrained(base_model)
-    tokenizer = PreTrainedTokenizerFast.from_pretrained(base_model)
+    # tokenizer = PreTrainedTokenizerFast.from_pretrained(base_model)
+    tokenizer = AutoTokenizer.from_pretrained(base_model)
 
     # unk. we want this to be different from the eos token
     # tokenizer.pad_token_id = 0
