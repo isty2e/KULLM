@@ -160,8 +160,10 @@ def train(
     # tokenizer = PreTrainedTokenizerFast.from_pretrained(base_model)
     tokenizer = AutoTokenizer.from_pretrained(base_model)
 
+    is_llama = ("llama" in base_model) or ("quantumaikr" in base_model)
+
     # unk. we want this to be different from the eos token
-    if "llama" in base_model:
+    if is_llama:
         tokenizer.pad_token_id = 0
     # Allow batched inference
     tokenizer.padding_side = "left"
@@ -240,7 +242,7 @@ def train(
 
     model = prepare_model_for_kbit_training(model)
 
-    if "llama" in base_model:
+    if is_llama:
         lora_target_modules=["q_proj", "v_proj"]
 
     config = LoraConfig(
