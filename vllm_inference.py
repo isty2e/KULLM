@@ -19,9 +19,16 @@ def get_ids_and_prompts(
     start_idx: Optional[int] = None,
     end_idx: Optional[int] = None,
 ) -> tuple[list[str], list[str]]:
-    dataset = load_dataset("json", data_files=str(data_path))
+    if Path(data_path).suffix in {".json", ".jsonl"}:
+        dataset = load_dataset("json", data_files=data_path)
+    elif Path(data_path).suffix == ".parquet":
+        dataset = load_dataset("parquet", data_files=data_path)
+    else:
+        dataset = load_dataset(data_path)
+
     if shuffle:
         dataset = dataset.shuffle()
+
     data_ids, prompts = [], []
 
     if start_idx is None:

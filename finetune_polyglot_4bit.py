@@ -1,5 +1,6 @@
 import os
 import sys
+from pathlib import Path
 from typing import List
 
 import fire
@@ -13,12 +14,12 @@ from peft import (
     set_peft_model_state_dict,
 )
 from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
     BitsAndBytesConfig,
     GPTNeoXForCausalLM,
     GPTNeoXTokenizerFast,
     PreTrainedTokenizerFast,
-    AutoTokenizer,
-    AutoModelForCausalLM,
     TrainerCallback,
     TrainerControl,
     TrainerState,
@@ -243,7 +244,7 @@ def train(
     model = prepare_model_for_kbit_training(model)
 
     if is_llama:
-        lora_target_modules=["q_proj", "v_proj"]
+        lora_target_modules = ["q_proj", "v_proj"]
 
     config = LoraConfig(
         r=lora_r,
@@ -255,8 +256,10 @@ def train(
     )
     model = get_peft_model(model, config)
 
-    if data_path.endswith(".json") or data_path.endswith(".jsonl"):
+    if Path(data_path).suffix in {".json", ".jsonl"}:
         data = load_dataset("json", data_files=data_path)
+    elif Path(data_path).suffix == ".parquet":
+        data = load_dataset("parquet", data_files=data_path)
     else:
         data = load_dataset(data_path)
 
@@ -323,7 +326,7 @@ def train(
             save_steps=eval_interval,
             output_dir=output_dir,
             save_total_limit=3,
-            load_best_model_at_end=True if val_set_size > 0 else False,
+            load_best_model_at_end=val_set_size > 0,
             ddp_find_unused_parameters=False if ddp else None,
             group_by_length=group_by_length,
             report_to="wandb" if use_wandb else None,
