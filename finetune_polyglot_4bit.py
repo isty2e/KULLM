@@ -161,7 +161,8 @@ def train(
     tokenizer = AutoTokenizer.from_pretrained(base_model)
 
     # unk. we want this to be different from the eos token
-    # tokenizer.pad_token_id = 0
+    if "llama" in base_model:
+        tokenizer.pad_token_id = 0
     # Allow batched inference
     tokenizer.padding_side = "left"
 
@@ -239,6 +240,9 @@ def train(
 
     model = prepare_model_for_kbit_training(model)
 
+    if "llama" in base_model:
+        lora_target_modules=["q_proj", "v_proj"]
+
     config = LoraConfig(
         r=lora_r,
         lora_alpha=lora_alpha,
@@ -308,7 +312,7 @@ def train(
             warmup_steps=100,
             num_train_epochs=num_epochs,
             learning_rate=learning_rate,
-            fp16=True,
+            bf16=True,
             logging_steps=1,
             optim="adamw_torch",
             evaluation_strategy="steps" if val_set_size > 0 else "no",
