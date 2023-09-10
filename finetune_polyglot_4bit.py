@@ -265,11 +265,11 @@ def train(
     model = get_peft_model(model, config)
 
     if Path(data_path).suffix in {".json", ".jsonl"}:
-        data = load_dataset("json", data_files=data_path)
+        data = load_dataset("json", data_files=str(data_path))
     elif Path(data_path).suffix == ".parquet":
-        data = load_dataset("parquet", data_files=data_path)
+        data = load_dataset("parquet", data_files=str(data_path))
     else:
-        data = load_dataset(data_path)
+        data = load_dataset(str(data_path))
 
     if resume_from_checkpoint:
         # Check the available weights and load them

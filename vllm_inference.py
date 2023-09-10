@@ -20,11 +20,11 @@ def get_ids_and_prompts(
     end_idx: Optional[int] = None,
 ) -> tuple[list[str], list[str]]:
     if Path(data_path).suffix in {".json", ".jsonl"}:
-        dataset = load_dataset("json", data_files=data_path)
+        dataset = load_dataset("json", data_files=str(data_path))
     elif Path(data_path).suffix == ".parquet":
-        dataset = load_dataset("parquet", data_files=data_path)
+        dataset = load_dataset("parquet", data_files=str(data_path))
     else:
-        dataset = load_dataset(data_path)
+        dataset = load_dataset(str(data_path))
 
     if shuffle:
         dataset = dataset.shuffle()
