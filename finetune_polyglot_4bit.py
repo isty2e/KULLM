@@ -157,9 +157,18 @@ def train(
         device_map=device_map,
     )
 
+    if "quantumai" in base_model:
+        padding_side = "right"
+        use_fast = False
+    else:
+        padding_side = "left"
+        use_fast = True
+
     # tokenizer = GPTNeoXTokenizerFast.from_pretrained(base_model)
     # tokenizer = PreTrainedTokenizerFast.from_pretrained(base_model)
-    tokenizer = AutoTokenizer.from_pretrained(base_model)
+    tokenizer = AutoTokenizer.from_pretrained(
+        base_model, padding_side=padding_side, use_fast=use_fast
+    )
 
     is_llama = ("llama" in base_model) or ("quantumaikr" in base_model)
 
@@ -167,7 +176,6 @@ def train(
     if is_llama:
         tokenizer.pad_token_id = 0
     # Allow batched inference
-    tokenizer.padding_side = "left"
 
     def tokenize(prompt, add_eos_token=True):
         # there's probably a way to do this with the tokenizer settings
