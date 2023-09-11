@@ -170,7 +170,11 @@ def train(
         base_model, padding_side=padding_side, use_fast=use_fast
     )
 
-    is_llama = ("llama" in base_model) or ("quantumaikr" in base_model)
+    is_llama = False
+    for model_name in ("llama", "quantumaikr", "komt"):
+        if model_name in base_model.lower():
+            is_llama = True
+            break
 
     # unk. we want this to be different from the eos token
     if is_llama:
